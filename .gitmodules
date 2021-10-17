@@ -1,0 +1,3 @@
+[submodule "SJTUBeamer"]
+	path = SJTUBeamer
+	url = https://github.com/sjtug/SJTUBeamer.git
