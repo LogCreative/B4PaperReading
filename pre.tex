@@ -2,6 +2,7 @@
 % Load the colortbl package, in order to use the tools for coloring
 % rows, columns, and cells within tables.
 \usetheme[]{sjtubeamer}
+\beamer@theme@subsectionfalse
 \usepackage[style=authortitle-comp]{biblatex}
 \addbibresource{ref.bib}
 \graphicspath{{img/}}
@@ -19,6 +20,9 @@
 \newcommand{\@gooble@rowcolor@}[1][]{\@gooble@rowcolor@@}
 \newcommand{\@gooble@rowcolor@@}[1][]{\ignorespaces}
 \makeatother
+
+\usepackage[vlined,ruled,linesnumbered]{algorithm2e}
+\usepackage{float}
 
 \begin{document}
     

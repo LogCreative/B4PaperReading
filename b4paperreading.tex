@@ -1,10 +1,13 @@
 %&"pre"
+% \endofdump
+% \tikzexternalize[prefix=cache/]{b4paperreading}
 \begin{document}
     \title{B4: Google's Software-Defined WAN}
     \subtitle{Paper Reading}
     \author{Log Creative}
     \date{\today}
     \maketitle
+
     \begin{frame}
         \frametitle{论文}
         \fullcite{Hong2018}
@@ -61,11 +64,11 @@
             \item 对交换机有限的流表空间增加压力。
             \item 使得容量管理变得复杂并给应用开发者造成麻烦。
         \end{enumerate}
-        \only<2>{为了解决这个问题，引入 \emph{supernode} 和两层架构。} % 后文讨论细节
+        \only<2>{为了解决这个问题，引入 \emph{supernode}（超级节点）和两层架构。} % 后文讨论细节
     \end{frame}
 
     \begin{frame}
-        \frametitle{层级架构}
+        \frametitle{分层架构}
         \framesubtitle{容量不对等问题}
         B4 中 6--20\% 的地理级连接仍然会在 $\geq$ 5\% 的时间内有容量不对等情形。
         \begin{figure}[H]
@@ -77,7 +80,7 @@
         \end{figure}
     \end{frame}
 
-    \begin{frame}
+    \begin{frame}[label=asym]
         \frametitle{不对等的后果}
         \framesubtitle{大幅减少系统效率}
 
@@ -246,7 +249,7 @@
             \begin{column}{0.2\textwidth}
                 \begin{figure}
                     \includegraphics[width=\linewidth]{stargateswitch}
-                    \caption{交换机与交换机箱}
+                    \caption{交换机与交换机架}
                 \end{figure}
             \end{column}
             \begin{column}{0.6\textwidth}
@@ -256,6 +259,64 @@
                 \end{figure}
             \end{column}
         \end{columns}
+    \end{frame}
+
+    \section{分层流量工程}
+
+    \begin{frame}
+        \frametitle{简单粗暴的提案}
+        \framesubtitle{平面流量工程}
+        \highlight[csecondary]{方法}~直接对站点内所有的超级节点直接应用流量控制。这种模型下，由一个中央控制器使用 IP-in-IP 封装对超级节点级隧道进行负载均衡。
+
+        \paragraph{缺点} 高运行时间、花费大量的交换机流表空间、不可扩展。每个站点内有4个超级节点，那么站点到站点间的3跳转发会有$4^3=64$条路径。
+    \end{frame}
+
+    \begin{frame}
+        \frametitle{简单粗暴的提案}
+        \framesubtitle{最短路转发}
+
+        \highlight[csecondary]{方法}~超级节点级链路实现最短路转发。
+
+        \paragraph{优点}拥有扩展性、只需要一层封装、在广域网失效时能够通过\alert{旁路链接}完成流量转移。
+
+        \paragraph{缺点}无法处理容量不对等情形，不是完全失效的情况下无法找到通过\alert{旁路链接}得到的更长但容量更大的路径。
+        \hyperlink{asym<3>}{\beamergotobutton{不对等的后果}}
+    \end{frame}
+
+    \begin{frame}
+        \frametitle{分层流量工程结构}
+        \framesubtitle{概念}
+        \begin{columns}
+            \begin{column}{0.6\textwidth}
+                \begin{itemize}
+                    \item[SSG] \emph{Switch Split Group} 确定物理交换机所分割的流量。
+                    \item[TSG] \emph{Tunnel Split Group} 确定一个链路内的流量分布，分割通过超级节点的流量。 
+                    \item[TG] \emph{Tunnel Group} 通过 IP-in-IP 封装映射 FG 到一个链路\emph{tunnel}集合。 
+                    \item[FG] \emph{Flow Group} $\langle$源站点, 目标站点, 服务类别$\rangle$ 
+                \end{itemize}
+            \end{column}
+            \begin{column}{0.4\textwidth}
+                \begin{figure}
+                    \centering
+                    \includegraphics[width=0.9\linewidth]{hitearch}
+                    \caption{不同的流量工程结构}
+                \end{figure}
+            \end{column}
+        \end{columns}
+    \end{frame}
+
+    \begin{frame}
+        \frametitle{分层流量工程结构}
+        \framesubtitle{运行概览}
+        \begin{algorithm}[H]
+            \caption{B4 运行概览}
+            域控制器通过聚合可用的物理链路容量来计算超级节点间的连接\;
+            中央控制器根据上述结果计算 TSG 来分配每一条站点级的出口连接\;
+            \leIf{对等}{不使用旁路连接\;}{通过旁路连接重新分配TSG}
+            使用上述 TSG 结果计算站点级每条链路的有效容量，生成 TG\;
+            生成 TE 操作的无环依赖图\;
+            通过生成 SSG 分割规则，按照次序对 FG, TG, TSG 编程\;
+        \end{algorithm}
     \end{frame}
 
     \makebottom
