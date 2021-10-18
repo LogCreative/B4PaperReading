@@ -399,5 +399,116 @@
         \end{figure}
     \end{frame}
 
+    \begin{frame}[plain]
+        \frametitle{网络流算法}
+        \framesubtitle{回顾}
+        \begin{columns}
+            \begin{column}{0.5\textwidth}
+                \begin{algorithm}[H]
+                    \caption{Augment($f,c,P$)}
+                    $\delta\Leftarrow$ bottleneck capacity of augmenting path $P$\;
+                    \ForEach(){$e\in P$}{
+                        \If(){$e\in E$}{
+                            $f(e)\leftarrow f(e)+\delta$\;
+                        }
+                        \Else(){
+                            $f(e^R)\leftarrow f(e^R)-\delta$\;
+                        }
+                    }
+                    \Return{$f$}\;
+                \end{algorithm}
+            \end{column}
+            \begin{column}{0.5\textwidth}
+                \begin{algorithm}[H]
+                    \caption{Ford-Fulkerson Algorithm}
+                    \KwIn{$G=(V,E),c,s,t$}
+                    \ForEach(){$e\in E$}{
+                        $f(e)\leftarrow 0$\;
+                    }
+                    $G_f\leftarrow$ residual graph\;
+                    \While(){there exists augmenting path $P$}{
+                        $f\leftarrow$ Augment$(f,c,P)$\;
+                        update $G_f$\;
+                    }
+                    \Return{$f$}\;
+                \end{algorithm}
+            \end{column}
+        \end{columns}
+    \end{frame}    
+
+    \begin{frame}
+        \frametitle{TSG 生成算法}
+        \framesubtitle{算法描述}
+        对于每一个有向站点级链接作为独立的网络流问题。
+        \begin{description}
+            \item[$G_{TSG}=(V,E)$] 有向图。包含
+            \begin{itemize}
+                \item 源站点的超级节点$S=\{S_i|1\leq i\leq N\}$
+                \item 目标站点 $D$
+            \end{itemize}
+            \item[$C(u,v)$] 边 $(u,v)$ 的容量，$\forall (u,v)\in E$。两种边：
+            \begin{itemize}
+                \item 源站点间超级节点间的连接边 $\forall i,j\neq i:S_i\leftrightarrow S_j$
+                \item 源站点超级节点与目标站点超级节点的连接边 $\forall i: S_i\leftrightarrow D$
+            \end{itemize} 
+            \item[$PG$] \emph{Path Groups} 来满足从源站点每一个超级节点向目标节点的无限需求
+            \begin{itemize}
+                \item $PG_{1-hop}$
+                \item $PG_{2-hop}$
+            \end{itemize} 
+        \end{description}
+    \end{frame}
+
+    \begin{frame}
+        \begin{algorithm*}[H]
+            \small
+            \caption{TSG 生成算法}
+            \KwData{$G_{TSG}=(V,E)$,$C(u,v)$}
+            \KwResult{$TSG(u,v)$}
+            $\forall (u,v)\in E$ $C_\text{Remaining}(u,v):=C(u,v)$\;
+            \Repeat{True}{
+                $\forall(u,v)\in E$ $\mathit{weight}(u,v):=0$\;
+                % \tcc*[r]{weight: 链路上被分配的流量比例}
+                $\mathit{frozen\_flow}:=$NULL\;
+                \ForEach{$S_i\in S$}{
+                    $\textit{PG}_\text{2-hop}(S_i):=\{[(S_i,v),(v,D)]|v\in S, C_\text{Remaining}(S_i,v)>0, C_\text{Remaining}(v,D)>0\}$\;
+                    \uIf{$C_\text{Remaining}(S_i)>0$}{
+                        $\mathit{weight}(S_i,D)+=1$\;
+                    }
+                    \uElseIf{$\mathit{PG}_\text{2-hop}\neq\varnothing$}{
+                        \ForEach{path $P \in \mathit{PG}_\text{2-hop}(S_i)$}{
+                            \ForEach{$(u,v)\in P$}{
+                                $\mathit{weight}(u,v)+=\frac{1}{|\mathit{PG}_\text{2-hop}(S_i)|}$
+                            }
+                        }
+                    }
+                    \lElse(\tcp*[f]{Stop when any flow failed finding}){$\mathit{frozen\_flow}:=S_i$\quad\textbf{break}}
+                }
+                \tcc{More procedure in the next page...}
+            }
+        \end{algorithm*}
+    \end{frame}
+
+    \begin{frame}
+        \begin{algorithm*}[H]
+            \small
+            \caption{TSG 生成算法（续）}
+            \Repeat{True}{
+                \tcc{... Continued from the previous page}
+                \lIf{$\mathit{frozen\_flow}\neq$NULL}{\textbf{break}}
+                $E^\prime =\{(u,v)\in E|\mathit{weight}(u,v)>0\}$\;
+                $\forall (u,v)\in E^\prime \mathit{fair\_share}(u,v):=\frac{C_\text{Remaining}(u,v)}{\mathit{weight}(u,v)}$\;
+                $\mathit{BFS}:=\min_{(u,v)\in E^\prime}\mathit{fair\_share}(u,v)$\tcc*[r]{Bottleneck Fair Share}
+                \ForEach{$(u,v)\in E^\prime$}{
+                    $C_\text{Remaining}(u,v)-=BFS\times\mathit{weight}(u,v)$\;
+                }
+            }
+            \ForEach{$(u,v)\in E^\prime$}{
+                $\mathit{TSG}(u,v)=\frac{C(u,v)-C_\text{Remaining}(u,v)}{\sum_{(u,v^\prime)\in E}(C(u,v^\prime)-C_\text{Remaining}(u,v^\prime))}$\;
+            }
+        \end{algorithm*}
+        贪婪灌水算法通过最大最小公平规则 \emph{Max-Min Fairness} 以迭代分配瓶颈容量。
+    \end{frame}
+
     \makebottom
 \end{document}
