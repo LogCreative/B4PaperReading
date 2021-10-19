@@ -2,13 +2,13 @@
 % Load the colortbl package, in order to use the tools for coloring
 % rows, columns, and cells within tables.
 \usetheme[]{sjtubeamer}
-\beamer@theme@subsectionfalse
 \usepackage[style=authortitle-comp]{biblatex}
 \addbibresource{ref.bib}
 \graphicspath{{img/}}
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \makeatletter
+\beamer@theme@subsectionfalse
 \def\rowcolor{\noalign{\ifnum0=`}\fi\bmr@rowcolor}
 \newcommand<>{\bmr@rowcolor}{%
     \alt#1%
