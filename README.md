@@ -7,7 +7,3 @@
 计算机网络课程论文分享 [尚未完成的PDF](https://logcreative.github.io/B4PaperReading/b4paperreading.pdf)
 
 > 10 月 14 日布置  10 月 21 日展示
-
-组队暂无队友(1/5)，现在状态：
-
-### 一个人，一台电脑，四个日夜，一个奇迹

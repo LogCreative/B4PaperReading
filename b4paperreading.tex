@@ -261,6 +261,17 @@
         \end{columns}
     \end{frame}
 
+    \begin{frame}[plain]
+        \frametitle{Facebook Outage}
+        \framesubtitle{BGP 相关新闻}
+        Facebook 在 10 月 4 日爆发了服务大中断，其他网络无法与之形成正确的连接。
+        \begin{figure}
+            \centering
+            \includegraphics[width=\linewidth]{bgp}
+            \caption{BGP 变更高峰\footfullcite{cloudflarebgp}}
+        \end{figure}
+    \end{frame}
+
     \section{分层流量工程}
 
     \begin{frame}
@@ -472,7 +483,7 @@
                 $\mathit{frozen\_flow}:=$NULL\;
                 \ForEach{$S_i\in S$}{
                     $\textit{PG}_\text{2-hop}(S_i):=\{[(S_i,v),(v,D)]|v\in S, C_\text{Remaining}(S_i,v)>0, C_\text{Remaining}(v,D)>0\}$\;
-                    \uIf{$C_\text{Remaining}(S_i)>0$}{
+                    \uIf{$C_\text{Remaining}(S_i,D)>0$}{
                         $\mathit{weight}(S_i,D)+=1$\;
                     }
                     \uElseIf{$\mathit{PG}_\text{2-hop}\neq\varnothing$}{
