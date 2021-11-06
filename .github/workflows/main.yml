@@ -13,5 +13,3 @@ jobs:
           latexmk_use_lualatex: true
       - name: Commit PDF file
         uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          file_pattern: *.pdf
