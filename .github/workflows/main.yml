@@ -11,8 +11,7 @@ jobs:
         with:
           root_file: pre.tex
           latexmk_use_lualatex: true
-      - name: Upload PDF file
-        uses: actions/upload-artifact@v2
+      - name: Commit PDF file
+        uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          name: PDF
-          path: pre.pdf
+          file_pattern: *.pdf
