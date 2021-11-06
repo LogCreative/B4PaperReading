@@ -403,10 +403,61 @@
                 \only<1>{对等网络 $TC=4c$}
                 \only<2>{不对等网络 $TC=2c$}
                 \only<3>{不对等网络 $TC=3c$}
-                \only<4>{$TC=0$ ($B_1$故障) 或 $TC=2c$ ($B_1$关闭)}
+                \only<4>{$TC=0$ ($B_1$故障)\footnote{\hyperlink{notclose}{\beamergotobutton{不关闭的后果}}} 或 $TC=2c$ ($B_1$关闭)}
                 \only<5>{$TC=9c/4$ (次优解)}
                 \only<6>{$TC=3c$ (最优解)}
             }
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}[plain,label=notclose]
+        \frametitle{不关闭的后果}
+        最近的一次 lab 含有环路的网络，代码写的不好的话，如果切断一个链路，而没有告知另一侧的路由，将会导致另一侧的路由仍然会向错误的链路发包，导致不可达。
+
+        \begin{figure}
+            \begin{tikzpicture}
+                \tikzstyle{host}=[draw]
+                \tikzstyle{switch}=[draw]
+                \tikzstyle{connection}=[]
+                \tikzstyle{constr}=[right,font=\ttfamily\small]
+            \node (h1) [host] at (-0.5,0.5) {h1};
+            \node (s1) [switch] at (1.5,0.5) {s1};
+            \only<1,2>{
+                \node (s3) [switch] at (3,2) {s3};
+            }
+            \only<3>{
+                \node (s3) [switch,opacity=0.5] at (3,2) {s3};
+            }
+            \node (s2) [switch] at (4.5,0.5) {s2};
+            \node (s4) [switch] at (3,-1) {s4};
+            \node (h2) [host] at (6.5,0.5) {h2};
+            \draw[line width=1pt] (h1) edge (s1);
+            \only<1>{
+                \draw[line width=1pt] (s1) edge (s3);
+            }
+            \only<1>{
+                \draw (s1) edge (s4);
+            }
+            \only<2->{
+                \draw[line width=1pt] (s1) edge (s4);
+            }
+            \only<1>{
+                \draw[line width=1pt] (s3) edge (s2);
+            }
+            \only<2>{
+                \draw[line width=1pt,->,csecondary] (s2) edge (s3);
+            }
+            \only<2>{
+                \draw[line width=1pt,->] (s4) edge (s2);
+            }
+            \only<3>{
+                \draw[line width=1pt] (s4) edge (s2);
+            }
+            \draw[line width=1pt] (s2) edge (h2);
+            \end{tikzpicture}
+            \caption{\only<1>{正常链路}
+            \only<2>{不可达}
+            \only<3>{关闭后}}
         \end{figure}
     \end{frame}
 
@@ -473,7 +524,7 @@
     \begin{frame}
         \begin{algorithm*}[H]
             \small
-            \caption{TSG 生成算法}
+            \caption{TSG 生成算法}\label{alg:tsggen}
             \KwData{$G_{TSG}=(V,E)$,$C(u,v)$}
             \KwResult{$TSG(u,v)$}
             $\forall (u,v)\in E$ $C_\text{Remaining}(u,v):=C(u,v)$\;
@@ -520,6 +571,162 @@
         \end{algorithm*}
         贪婪灌水算法通过最大最小公平规则 \emph{Max-Min Fairness} 以迭代分配瓶颈容量。
     \end{frame}
+
+    \begin{frame}
+        \frametitle{定理 1}
+        \framesubtitle{生成 TSG 无环}
+        生成的 TSG 不会产生任何环路。
+        \only<2->{
+        \begin{block}{证明}
+        \begin{columns}
+            \begin{column}{0.4\textwidth}
+            \begin{tikzpicture}[node distance=9pt]
+                \tikzstyle{blackdot}=[circle,scale=0.3,fill];
+                
+                \draw (0,-0.5) node [blackdot] (v0) {} -- (1,-1)node [blackdot] (v1) {};
+                \node[below of=v0] {$S_0$};
+                \node[right of=v1] {$S_1$};
+                \only<2>{
+                    \node[csecondary,draw,circle,minimum width=16pt] (v2) at (1,1) {$D$};
+                }
+                \only<3->{
+                    \node[draw,circle,minimum width=16pt] (v2) at (1,1) {$D$};
+                }
+                \draw  (v0) edge (v1);
+                \draw (-1.5,0) node[blackdot] (vn) {} edge[] (v0);
+                \only<4->{
+                    \draw[csecondary, line width=1pt] (v0) edge (v2);
+                    \draw[csecondary, line width=1.5pt]  (v2) edge (v1);
+                }
+                \only<4->{
+                    \draw[csecondary, line width=2pt]  (vn) edge (v2);
+                    \node[cprimary, right of=vn, xshift=1cm] {$\nless $};
+                }
+                \node[above of=vn] {$S_{l-1}$};
+                
+                \draw[dashed]  plot[smooth, tension=.7] coordinates {(v1) (0.5,-2.5) (-1.5,-2.5) (-2.5,-1) (vn)};
+                
+                \draw  (vn) edge[draw=none]  (v0);
+            \end{tikzpicture}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \only<2>{
+                $D$ 是目标节点。
+
+                假设生成的 TSG 含有环路，首先这个环路不会包含目标节点。
+            }
+            \only<3>{
+                由于寻路算法最多只允许两跳，所以贪婪算法告诉我们，对于 $S_0$ 而言，如果选择了含有 $S_1$ 节点的路径，那么$\langle S_0,D\rangle$一定比$\langle S_1,D\rangle$ 更拥挤。
+            }
+            \only<4>{
+                这样进行下去会导致$\langle S_{l-1},D\rangle$应当比$\langle S_0,D\rangle$更拥挤，但是环形的不等式告诉我们这件事情是矛盾的。\qed
+            }
+        \end{column}
+        \end{columns}
+        \end{block}
+        }       
+    \end{frame}
+
+    \begin{frame}
+        \frametitle{TSG 排序算法}
+        \begin{algorithm}[H]
+            \caption{TSG 排序算法}
+            \KwIn{$G_{TSG}$和由算法\ref{alg:tsggen}产生的TSG}
+            \KwOut{TSG更新顺序}
+            \only<1>{建立依赖图}\only<2>{\highlight[csecondary]{建立依赖图}}，定理1指示其不会有环路，因此有对于 DAG 的拓扑排序\;
+            以反向拓扑排序顺序更新 TSG\;
+        \end{algorithm}
+        \only<1>{该算法与 IGP (Interior Gateway Protocol) 的更新算法类似。}
+        \only<2>{
+            \begin{equation*}
+                \langle S_i, S_j\rangle \text{被添加进依赖图中}\leftarrow\begin{cases}
+                    S_j\text{是}S_i\text{的下一跳}\\
+                    S_j=D\text{而且}S_i\text{向下一个站点传输\emph{任何}流量}
+                \end{cases}
+            \end{equation*}
+        }
+    \end{frame}
+    
+    \begin{frame}
+        \frametitle{定理 2}
+        \framesubtitle{中间过程不含环路}
+        TSG 升级时，如果原始和目标 TSG 都不包含环路，那么TSG的任何中间过程也都不包含环路。
+        \only<2->{
+        \begin{block}{证明}
+            \begin{columns}
+                \begin{column}{0.45\textwidth}
+                    \begin{tikzpicture}
+                        \tikzstyle{supernode}=[rectangle,draw,minimum width=1cm,minimum height=0.7cm,fill=white];
+                        \tikzstyle{flow}=[->, line width=1pt];
+                        \node [supernode] (a1) at (-1.5,1.5) {$A_1$};
+                        \node [supernode] (a2) at (-1.5,-0.5) {$A_2$};
+                        \only<2>{
+                            \node [supernode] (b1) at (1,1.5) {$B_1$};
+                            \node [supernode] (b2) at (1,-0.5) {$B_2$};
+                            \node [supernode] (c1) at (3.5,1.5) {$C_1$};
+                            \node [supernode] (c2) at (3.5,-0.5) {$C_2$};
+                        }
+                        \only<3->{
+                            \node [supernode, draw=csecondary,font=\color{csecondary}] (b1) at (1,1.5) {$B_1$};
+                            \node [supernode, draw=csecondary,font=\color{csecondary}] (b2) at (1,-0.5) {$B_2$};
+                            \node [supernode, draw=csecondary,font=\color{csecondary}] (c1) at (3.5,1.5) {$C_1$};
+                            \node [supernode, draw=csecondary,font=\color{csecondary}] (c2) at (3.5,-0.5) {$C_2$};
+                        }
+                        \draw [flow] (a1) edge (b1);
+                        \draw [flow] (a1) edge (b2);
+                        \draw [flow] (a2) edge (b1);
+                        \only<2>{
+                            \draw [flow] (b1) edge (c1);
+                            \draw [flow] (b1) edge (c2);
+                            \draw [flow] (b2) edge (c1);
+                            \draw [flow] (b2) edge (c2);
+                        }
+                        \only<3->{
+                            \draw [flow, csecondary] (b1) edge (c1);
+                            \draw [flow, csecondary] (b2) edge (c1);
+                        }
+                    \end{tikzpicture}
+                \end{column}
+                \begin{column}{0.45\textwidth}
+                    \only<2>{
+                        原始 TSG 不包含环路。 
+                    }
+                    \only<3>{
+                        TSG 中间过程有两种状态的节点：
+                        \begin{itemize}
+                            {\color{csecondary} \item 解析过的节点}
+                            \item 未解析的节点 
+                        \end{itemize}
+                    }
+                    \only<4>{
+                        如果存在环路：
+                        \begin{itemize}
+                            \item[$\times$] 不会只出现在\textcolor{csecondary}{解析过的节点}中，原始TSG不包含环路
+                            \item[$\times$] 不会只出现在未解析的节点中，目标TSG不包含环路
+                            \item[$\surd$] 环路中至少一个\textcolor{csecondary}{解析过的节点}和一个未解析的节点 
+                        \end{itemize}
+                    }
+                    \only<5>{
+                        那么这个环路应当存在由\textcolor{csecondary}{解析过的节点}$\rightarrow$未解析的节点的链路。然而，由于使用的是反向拓扑顺序，这是不可能的。\qed
+                    }
+                \end{column}
+            \end{columns}
+        \end{block}
+        }
+    \end{frame}
+    
+    \begin{frame}
+        \frametitle{定理 3}
+        \framesubtitle{中间过程无黑洞流}
+        考虑对于给定的 TSG 下载流下的一个黑洞流。假设原始的TSG可能包含黑洞流，目标TSG不会有黑洞流，下载流集合没有发生改变的情况下，如果在原始TSG中不是黑洞流，所有TSG中间过程对应的流都不是黑洞流（中间过程不会增加黑洞流）。
+        \only<2>{
+        \begin{block}{证明}
+            假设 $S_i\rightarrow D$ 是中间过程中的一个黑洞流，但在原始TSG中不是黑洞流。那么至少一个节点\textcolor{csecondary}{被解析}，黑洞流只会出现在这个解析时或解析后。
+
+            然而由于相同的原因，\textcolor{csecondary}{解析后的节点}不会向未解析的节点输送流量，那么黑洞流只会出现在\textcolor{csecondary}{解析后的节点}中，然而目标 TSG 不含有黑洞流，所以产生了矛盾。\qed
+        \end{block}
+        }
+    \end{frame}    
 
     \makebottom
 \end{document}
