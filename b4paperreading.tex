@@ -19,11 +19,25 @@
     \fullcite{Hong2018}
 \end{frame}
 
+\begin{frame}
+    \frametitle{摘要}
+    \only<1>{
+        专用广域网对于企业、通信和云供应商变得越来越重要。B4是Google的专有软件定义广域网，它变得越来越大并增长地越来越快。这篇论文讲述了B4的五年之变，使用一些技术来升级可用性，并适应超百倍的流量增长。我们主要的挑战是平衡层级带来的\highlight{可扩展性}、为达成\highlight{可用性}需要的划分、建设过程带来的\highlight{容量不均衡}三者带来的张力。
+    }
+    \only<2>{
+        \begin{enumerate}
+            \item 为纵横扩展设计了一个自定义的层级网络拓扑结构
+            \item 为层级网络结构固有的容量不均衡设计了一个巧妙的流量工程算法，不需要任何封装
+            \item 通过两阶段的匹配/哈希，重新设计了交换机转发规则，来应对大型网络中的不均衡失效问题
+        \end{enumerate}
+    }
+\end{frame}
+
 \section{简介}
 
 \begin{frame}
     \frametitle{B4}
-    \framesubtitle{Google 私有广域网后端}
+    \framesubtitle{Google 专用广域网后端}
     \framezoom<1><2>(1cm,1.5cm)(3cm,2cm)
     \begin{figure}
         \centering
@@ -61,8 +75,9 @@
 
 \section{背景与动机}
 
+\section{扁平架构}
 \begin{frame}
-    \frametitle{扁平结构}
+    \frametitle{扁平架构}
     \framesubtitle{不利于扩展和可用性}
     之前的 B4 若想增加容量，需要在地理限界内增加站点。但这会带来：
     \begin{enumerate}
@@ -73,6 +88,7 @@
     \only<2>{为了解决这个问题，引入 \emph{supernode}（超级节点）和两层架构。} % 后文讨论细节
 \end{frame}
 
+\section{分层架构}
 \begin{frame}
     \frametitle{分层架构}
     \framesubtitle{容量不对等问题}
@@ -82,7 +98,7 @@
         \includegraphics[height=0.5\textheight]{asym}
 
         $\frac{\text{avg}_{\forall i} C_i - \text{min}_{\forall i} C_i}{\text{avg}_{\forall i} C_i}$
-        \caption{地理级流量不对等}\label{fig:asym}
+        \caption{地理级容量不对等}\label{fig:asym}
     \end{figure}
 \end{frame}
 
@@ -891,8 +907,8 @@
 
         \begin{column}{0.6\textwidth}
             \begin{itemize}
-                \item 基于Saturn时，二者数量一致；从2013年部署JPOP fabrics以后出现分歧
-                \item 2015年，为了提高可拓展性，大大减少了Saturn fabrics的站点数量，将其替换为Stargate。但由于在迁移期间，Saturn和Stargate fabrics会暂时在一个站点内共存，这反而带来了可拓展性问题。
+                \item 基于Saturn时，二者数量一致；从2013年部署JPOP以后出现分歧
+                \item 2015年，为了提高可拓展性，大大减少了Saturn的站点数量，将其替换为Stargate。但由于在迁移期间，Saturn和Stargate会暂时在一个站点内共存，这反而带来了可拓展性问题。
             \end{itemize}
         \end{column}
     \end{columns}
@@ -913,7 +929,7 @@
         \begin{column}{0.6\textwidth}
             \begin{itemize}
                 \item 过去的五年中，平均每个源站点的Flow Group增加了六倍
-                \item 2015年，停止向交换机和supertrunk端口分发IP地址，这使Flow Group减少了约30%
+                \item 2015年，停止向交换机和supertrunk端口分发IP地址，这使Flow Group减少了约30\%
             \end{itemize}
         \end{column}
     \end{columns}
@@ -1147,5 +1163,5 @@
     \end{itemize}
 \end{frame}
 
-\makebottom
+\makebottom[min]
 \end{document}
