@@ -10,6 +10,6 @@ jobs:
         uses: xu-cheng/latex-action@v2
         with:
           root_file: pre.tex
-          latexmk_use_lualatex: true
+          latexmk_use_xelatex: true
       - name: Commit PDF file
         uses: stefanzweifel/git-auto-commit-action@v4

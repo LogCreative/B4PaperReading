@@ -4,9 +4,15 @@
 \begin{document}
     \title{B4: Google's Software-Defined WAN}
     \subtitle{Paper Reading}
-    \author{Log Creative}
+    \author{李子龙　张　露　李婉婷　田淏元}
     \date{\today}
     \maketitle
+
+    \AtBeginSection{
+        \begin{frame}
+            \sectionpage
+        \end{frame}
+    }
 
     \begin{frame}
         \frametitle{论文}
@@ -730,6 +736,416 @@
         \end{block}
         }
     \end{frame}    
+
+    \section{高效交换规则管理}
+\begin{frame}{FG 匹配}
+\framesubtitle{最初ACL设计}
+在最初的设计中，FG 匹配是通过 ACL\footnote{Access Control List，访问控制列表，完全匹配。}实现的
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{img/FG.png}
+    \label{fig:my_label}
+\end{figure}
+计算后可知，当站点个数达到32左右，将会超过ACL的大小限制。
+\end{frame}
+
+\begin{frame}{FG 匹配}
+\framesubtitle{对比}
+采用层级 FG 匹配可以大幅增大支持的站点数量。
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.4\linewidth]{img/FG2.png}
+            \caption{最大支持站点数量：\textbf{32}}
+        \end{figure}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}
+            \centering
+            \includegraphics[width=0.8\linewidth]{img/FG3.png}
+            \caption{最大支持站点数量：\textbf{1920}}
+        \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{FG 匹配}
+\framesubtitle{层级 FG 匹配}
+%     将FG匹配换分为两个层次化阶段：
+% \begin{enumerate}
+%     \item 将集群前缀匹配迁移至LPM表，LPM表项远多于ACL表。
+%  \item 利用LPM表匹配虚拟路由转发（VRF）标签，通过虚拟转发平面（VFP）表匹配DSCP标记，使得匹配的数据包进入交换机流水线的LPM表之前可以关联一个VRG标签标示其相应的服务等级。
+% \end{enumerate}
+由于 LPM\footnote{Longest Prefix Matching，最长前缀匹配。} 表项远多于ACL表，但是 LPM 表并不能直接与 DSCP 标签匹配却可以与虚拟路由转发（VRF）标签匹配，所以首先采用 虚拟转发平面（VFP）生成VRF。
+\begin{columns}
+    \begin{column}{0.6\textwidth}
+        \begin{algorithm}[H]
+            \caption{层级 FG 匹配}
+            将 DSCP 标签先通过 VFP 匹配到一个 VRF 以确定相应的服务等级\;
+            结合 VRF 对集群前缀匹配于 LPM表\;
+        \end{algorithm}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\linewidth]{img/FG3.png}
+        \end{figure}
+    \end{column}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}{FG 匹配}
+    \framesubtitle{其他特性}
+    当TE发生某些致命错误时，可以在源站点禁用TE，暂时退回到BGP/ISIS。在入口站点的交换机上删除TE转发规则，数据包可以匹配较低优先级的BGP/ISIS转发规则，而无需封装。
+\end{frame}
+
+\begin{frame}{分流}
+\framesubtitle{最初设计}
+    最初，仅在入口边缘交换机实现划分
+% \begin{figure}
+%     \centering
+%     \includegraphics[width = 0.7\linewidth]{img/TS1.png}
+%     \label{fig:my_label}
+% \end{figure}
+\begin{equation*}
+    \only<1>{size_{ECMP}}\only<2>{198000}\geq \only<1>{num_{Sites}}\only<2>{33} \times num_{PathingClasses} \times num_{TGs} \times num_{TSGs} \times num_{SSGs}
+\end{equation*}
+\only<1>{
+\begin{enumerate}
+    \item $num_{PathingClasses}$是共享共同路径约束的服务类的数量，其值为3
+ \item $num_{TGs}$是隧道分割的颗粒度，其值为4
+\item $num_{TSGs}$是每个超级节点的分割粒度，其值为32
+\item $num_{SSGs}$是Stargate后端阶段可供分配的交换机个数，其值为16
+\end{enumerate}
+}
+\only<2>{
+当$num_{sites}$取33时，$size_{ECMP}$至少为198K，但实际上，交换机只支持$size_{ECMP}$不超过14K，可以通过降低数据分流的颗粒度来降低所需的ECMP条目，但是这会填平TE带来的优势。
+}
+\end{frame}
+
+\begin{frame}{分流}
+\framesubtitle{基于划分的高效流量哈希}
+\begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{algorithm}[H]
+            \caption{基于划分的高效流量哈希}
+            在一个 CLOS 集群上，边缘交换机决定采用哪个隧道（TG 分流）并判断入端数据流应被发送到哪个站点（TSG分流第\uppercase\expandafter{\romannumeral1}步）。用一特殊的 MAC 标识本地/下一跳结果\;
+            后端交换机判断该数据包应被发送到哪个超级节点上（TSG 分流第\uppercase\expandafter{\romannumeral2}步），并判断哪些出边缘交换机与该超级节点有链接（SSG分流）\;
+            \end{algorithm}
+            并对可用的后端交换机添加 LAG（Link Aggregation Group）以进一步减少入口边缘交换机分配规则。
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \begin{table}
+            \centering
+            \caption{分流判断负载对比}
+            \begin{tabular}{c|p{2cm}|p{1.5cm}}
+                \toprule
+                & \bfseries Before & \bfseries After \\
+                \hline
+                边缘 & TG, TSG, SSG & TG, TSG(\uppercase\expandafter{\romannumeral1})\\
+                \hline
+                后端 &  & TSG(\uppercase\expandafter{\romannumeral2}), SSG\\
+                \bottomrule
+            \end{tabular}
+            \end{table}
+        \end{column}
+\end{columns}
+\end{frame}
+
+\section{评估}
+\subsection{规模}
+\begin{frame}
+    \frametitle{规模}
+    \framesubtitle{总流量}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[height=0.6\textheight]{1_a.png}
+            \caption{归一化到最小值的流量总量}
+        \end{figure}
+        \end{column}
+        
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 五年内，总流量增长了两个数量级；平均每9个月，流量就增加一倍
+                \item 相较于面向互联网的广域网，B4提供了更多的流量，并且增长速度更快
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{规模}
+    \framesubtitle{站点与控制域的数量}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[height=0.6\textheight]{1_b.png}
+            \caption{站点和控制域的数量}
+        \end{figure}
+        \end{column}
+        
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 基于Saturn时，二者数量一致；从2013年部署JPOP fabrics以后出现分歧
+                \item 2015年，为了提高可拓展性，大大减少了Saturn fabrics的站点数量，将其替换为Stargate。但由于在迁移期间，Saturn和Stargate fabrics会暂时在一个站点内共存，这反而带来了可拓展性问题。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{规模}
+    \framesubtitle{Flow Group}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[height=0.6\textheight]{1_c.png}
+            \caption{每个站点的FG数}
+        \end{figure}
+        \end{column}
+        
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 过去的五年中，平均每个源站点的Flow Group增加了六倍
+                \item 2015年，停止向交换机和supertrunk端口分发IP地址，这使Flow Group减少了约30%
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{规模}
+    \framesubtitle{Tunnel Group}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[height=0.6\textheight]{1_d.png}
+            \caption{每个站点的TG数}
+        \end{figure}
+        \end{column}
+        
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 2013年初，开始支持多个服务级别，这使得每个站点的TG数翻了一番
+                \item 此后，随着站点数和服务级别的增加，每个站点的TG数持续增长
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{规模}
+    \framesubtitle{隧道数}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[height=0.6\textheight]{1_e.png}
+            \caption{每个站点的传输隧道数}
+        \end{figure}
+        \end{column}
+        
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 每个站点的传输隧道数由中央控制器的配置调控，这有助于避免配置过多的交换规则，但也限制了备份隧道的数量
+                \item 2016年，随着交换规则管理的改进，提高了可安装备份隧道的数量
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{可用性}
+    \paragraph{基于带宽的有效性}
+    \begin{equation*}
+        \frac{allocation}{min\{demand, approval\}}
+    \end{equation*}
+    其中，demand是基于短期内的历史试用情况评估的，approval是每个SLO所允许的最小带宽，allocation指当前带宽，它受到网络容量和公平性的约束。
+    \paragraph{基于连通性的有效性}对于每一个服务级别，通过一个网络测量系统对每个集群对进行测量。每一个集群对的有效性定义如下：
+    \begin{equation*}
+    \begin{cases}
+    1,&loss\_rate\leq\alpha\\
+    10^{-\beta\times(loss\_rate-\alpha)},&otherwise
+    \end{cases}
+    \end{equation*}
+    其中，$\alpha=5\%$是一个灵敏度阈值，它过滤掉了大部分的瞬态损失，同时捕获了会影响有效性的更大的损失。超过阈值后，随着传输损失率的提高，有效性成指数级下降，衰减因子$\beta=2\%$。
+\end{frame}
+
+\begin{frame}
+\frametitle{可用性测量结果}
+    \begin{figure}
+        \centering
+        \includegraphics[height=0.5\textheight]{6.2.png}
+        \caption{每个服务级别的测量到的和目标需要的不可用性} %
+    \end{figure}
+    
+    \begin{itemize}
+        \item 取上述两个指标的最小值作为网络有效性  
+        \item 对于每一个服务类，B4都达到了目标有效性
+    \end{itemize}
+\end{frame}
+
+\subsection{Design Tradeoffs}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{拓扑抽象化}
+    %\framesubtitle{Topology abstraction}   
+    为了更少的容量损失进行拓扑抽象。
+    \begin{figure}[h]%%图
+        \centering  %插入的图片居中表示
+        \includegraphics[height=0.5\textheight]{fig11.png}  
+        \caption{由分层拓扑中的容量不对等造成的容量损失}  %图片的名称
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{带有两级散列的分层结构TE}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+           	\begin{figure}[h]%%图
+                \centering  %插入的图片居中表示
+                \includegraphics[width=\linewidth]{fig12.png}  
+                \caption{吞吐量和平均运行时间比较}  %图片的名称
+            \end{figure}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+        		\item 分层结构TE的运行时间仅为2-3秒，比扁平结构TE快188倍。
+        		\item 当最大流量分割间隔设置为1时，不论是分层结构还是扁平结构性能都很差，其吞吐量分别少于对应结构最大吞吐量的91\%和46\%。
+        		\item 在最初的8路分流中，分层结构TE只实现了其最大吞吐量的94\%。
+        	\end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{TSG排序}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}
+                \includegraphics[height=0.7\textheight]{fig13a.png}
+                %\caption{}
+            \end{figure}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 在超过99.7\%的TSG操作中，TSG排序只需要一或两个“步骤”。
+                \item 每个步骤由一个或多个TSG更新组成，其中它们的相对顺序不被强制执行。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{TSG排序}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}
+                \includegraphics[height=0.7\textheight]{fig13b.png}
+                %\caption{}
+            \end{figure}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 在99.7百分位时，延迟增加了2倍，最坏情况下增加2.63倍。
+                \item TSG排序算法的运行时相对于编程延迟可以忽略不计。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{TSG排序}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}
+                \includegraphics[height=0.7\textheight]{fig13c.png}
+                %\caption{}
+            \end{figure}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 没有排序：可用容量因出现黑洞/循环降至零的可能性约为在3\%。
+                \item 有排序：这个可能性将被降低一个数量级。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{设计折衷}
+    \framesubtitle{TSG排序}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}
+                \includegraphics[height=0.7\textheight]{fig13d.png}
+                %\caption{}
+            \end{figure}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item 在没有排序的情况下，TSG运行时，有超过2\%的中间状态中形成转发循环，这导致超过 超过38\%的入口流量将被丢弃。
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{运营经验和待解决问题}
+\begin{frame}{简化管理}
+\begin{enumerate}
+    \item 升级前，需要手动计算由于容量不对称而造成的容量损失，以保证降级的站点容量仍然满足流量需求；升级后，需要人工干预之处大大减少，因为TE系统能够自动且高效的处理不对称容量。
+    \item 限制操作范围至一次一个域，以减小潜在的影响；使用影响分析工具对网络情况进行监控，通过结果判断某些请求是否被接受。
+    \item 由于B4网络的大规模，由命令行控制网络“排水”操作是不现实的，这一操作由管理工具调用，这些工具通过管理RPC来协调网络操作。
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{确定旁路容量}
+确定应部署的最佳旁路容量以满足带宽保证是一个非常困难的问题，Google正在研究一个日志驱动的统计分析框架以解决该问题。
+\end{frame}
+
+\begin{frame}{处理不平衡输入流量}
+    TSG算法默认入端流量是平衡的，优势在于，管道可以共享TSG规则，而不用对每个管道都去分配一套规则（这样做会超过硬件规则极限），但缺点在于，对不平衡的流量处理能力较差。Google尝试开发计算每对相邻站点级链接的TSG规则的算法进行优化。
+\end{frame}
+
+\begin{frame}{相关工作}
+    \begin{itemize}[<+->]
+    \item \highlight[csecondary]{Software-defined WAN}  一些公司也已经将SDN用于数据中心间的连接，如Facebook、微软SWAN等。Google认为他们发展B4的经验也可以应用于这些工作。
+    
+    \item \highlight[csecondary]{Decentralized, hierarchical network abstractions} 分层路由的概念由来已久，近年来也有不少去中心化的、分层式的SDN路由架构被提出。B4是以这些概念为基础构建出来的，Google认为其创新点在于克服了将这些众所周知的概念应用于全球规模时所面临的实际挑战。
+    
+    \item \highlight[csecondary]{TE and WAN resource scheduling} 诸如Tempus, Pretium, SOL, FFC 等创新性的概念是可以被运用到B4中以优化其控制和数据层面的。
+    
+    \item \highlight[csecondary]{Network update and switch rule management} B4中的TSG 排序不需要数据包标注即可解决限制性网络使用案例，这与同领域其他工作是不同的；解耦转发规则这一概念在很多过往的工作中已被应用，B4中，这一方案的独特之处在于，揭示了当规模足够大时，扩大交换机规则管理方面面临的挑战。
+    \end{itemize}
+    
+\end{frame}
+
+\section{总结}
+\begin{frame}{总结}
+    该论文介绍了本文介绍了Google团队将B4从一个以\alert{99\%}的可用性为目标的批量传输、内容复制网络发展到支持需要\alert{99.99\%}可用性的交互式网络服务的网络的历程和经验。主要是通过将B4重新架构为分层拓扑结构，同时开发TE算法和交换机规则管理机制来进行升级。高可用性、带宽充足的网络对众多云服务有着重要贡献，Google团队也正努力继续优化B4网络，使其可用性再次得到提高。
+\end{frame}
+
+\begin{frame}[plain]
+\frametitle{分工}
+\begin{itemize}
+    \item 李子龙：演讲、第 6 节
+    \item 张　露：第 1、2 节
+    \item 李婉婷：第 3、4 节
+    \item 田淏元：第 5、7 节
+\end{itemize}
+\end{frame}
 
     \makebottom
 \end{document}
