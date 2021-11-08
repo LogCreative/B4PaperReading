@@ -153,12 +153,11 @@
 \end{frame}
 
 \begin{frame}
-    使用 \emph{sidelink} 可以提高不对等时的带宽利用率。但是仍然需要考虑相关的协议问题，比如有些数据不可分割、MAC 地址不可变化，后文通过基于划分的哈希解决（算法 \ref{alg:hash}）。
-
-    以及死循环问题，转换隧道可能是\emph{原子操作}，以任意顺序应用 TE 更新会导致这种死循环率上升，后文通过TSG排序算法解决（算法 \ref{alg:tsgseq}）。
-
-    Merchant 交换机只支持有限的匹配和哈希规则，通过双层匹配（算法 \ref{alg:fgmatch}）和基于划分的哈希（算法 \ref{alg:hash}）减少流表规则数量上的压力。
-
+    \begin{itemize}[<+->]
+        \item 使用 \emph{sidelink} 可以提高不对等时的带宽利用率。但是仍然需要考虑相关的协议问题，比如有些数据不可分割、MAC 地址不可变化，后文通过基于划分的哈希解决（算法 \ref{alg:hash}）。
+        \item 以及死循环问题，转换隧道可能是\emph{原子操作}，以任意顺序应用 TE 更新会导致这种死循环率上升，后文通过TSG排序算法解决（算法 \ref{alg:tsgseq}）。
+        \item Merchant 交换机只支持有限的匹配和哈希规则，通过双层匹配（算法 \ref{alg:fgmatch}）和基于划分的哈希（算法 \ref{alg:hash}）减少流表规则数量上的压力。
+    \end{itemize}
 \end{frame}
 
 \section{站点拓扑的进化}
