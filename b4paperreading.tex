@@ -33,6 +33,11 @@
     }
 \end{frame}
 
+\begin{frame}
+    \frametitle{目录}
+    \tableofcontents
+\end{frame}
+
 \section{简介}
 
 \begin{frame}
@@ -75,7 +80,7 @@
 
 \section{背景与动机}
 
-\subsection{扁平架构}
+%\subsection{扁平架构}
 \begin{frame}
     \frametitle{扁平架构}
     \framesubtitle{不利于扩展和可用性}
@@ -88,7 +93,7 @@
     \only<2>{为了解决这个问题，引入 \emph{supernode}（超级节点）和两层架构。} % 后文讨论细节
 \end{frame}
 
-\subsection{分层架构}
+%\subsection{分层架构}
 \begin{frame}
     \frametitle{分层架构}
     \framesubtitle{容量不对等问题}
@@ -284,7 +289,7 @@
 
 \section{分层流量工程}
 
-\subsection{简单粗暴的提案}
+%\subsection{简单粗暴的提案}
 \begin{frame}
     \frametitle{简单粗暴的提案}
     \framesubtitle{平面流量工程}
@@ -305,7 +310,7 @@
     \hyperlink{asym<3>}{\beamergotobutton{不对等的后果}}
 \end{frame}
 
-\subsection{分层流量工程结构}
+%\subsection{分层流量工程结构}
 \begin{frame}
     \frametitle{分层流量工程结构}
     \framesubtitle{概念}
@@ -352,7 +357,7 @@
     \end{columns}
 \end{frame}
 
-\subsection{TSG生成算法}
+%\subsection{TSG生成算法}
 \begin{frame}
     \frametitle{TSG 生成算法}
     \framesubtitle{问题描述}
@@ -878,7 +883,7 @@
 \end{frame}
 
 \section{评估}
-\subsection{规模}
+%\subsection{规模}
 \begin{frame}
     \frametitle{规模}
     \framesubtitle{总流量}
@@ -1014,7 +1019,7 @@
     \end{itemize}
 \end{frame}
 
-\subsection{Design Tradeoffs}
+%\subsection{Design Tradeoffs}
 
 \begin{frame}
     \frametitle{设计折衷}
@@ -1134,12 +1139,10 @@
 
 \end{frame}
 
-\begin{frame}{确定旁路容量}
-    确定应部署的最佳旁路容量以满足带宽保证是一个非常困难的问题，Google正在研究一个日志驱动的统计分析框架以解决该问题。
-\end{frame}
+\begin{frame}
+    \paragraph{确定旁路容量} 确定应部署的最佳旁路容量以满足带宽保证是一个非常困难的问题，Google正在研究一个日志驱动的统计分析框架以解决该问题。
 
-\begin{frame}{处理不平衡输入流量}
-    TSG算法默认入端流量是平衡的，优势在于，管道可以共享TSG规则，而不用对每个管道都去分配一套规则（这样做会超过硬件规则极限），但缺点在于，对不平衡的流量处理能力较差。Google尝试开发计算每对相邻站点级链接的TSG规则的算法进行优化。
+    \paragraph{处理不平衡输入流量} TSG算法默认入端流量是平衡的，优势在于，管道可以共享TSG规则，而不用对每个管道都去分配一套规则（这样做会超过硬件规则极限），但缺点在于，对不平衡的流量处理能力较差。Google尝试开发计算每对相邻站点级链接的TSG规则的算法进行优化。
 \end{frame}
 
 \begin{frame}{相关工作}
